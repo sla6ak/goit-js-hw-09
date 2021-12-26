@@ -24,6 +24,11 @@ img {
   color: currentColor;
   display: block;
 }
+.value {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
 .centre {
   display: flex;
   flex-direction: column;

@@ -1,32 +1,41 @@
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-let r;
-let timeApp;
-let idTimer = null;
 
+// поработаем ручками и не удем использовать библиотек для вывода
+// объявим переменную для хранения выбранной даты
+let selectedTime;
+let timeApp;
+// это индекс сет таймаута часов
+let idTimer = null;
+// получим элементы верстки в объект
 const refs = {
   enterData: document.querySelector('#datetime-picker'),
   start: document.querySelector('button[data-start]'),
+  stop: document.querySelector('button[data-stop]'),
   days: document.querySelector('span[data-days]'),
   hours: document.querySelector('span[data-hours]'),
   minuts: document.querySelector('span[data-minutes]'),
   seconds: document.querySelector('span[data-seconds]'),
 };
-
+// сделаем кнопки неактивными
+refs.stop.disabled = 'disabled';
 refs.start.disabled = 'disabled';
-// console.log();
+
+refs.start.addEventListener('click', onStartClick);
+refs.stop.addEventListener('click', onStopClick);
+
+// обратимся к документации библиотеки и создадим объект календаря
 const flatpic = flatpickr(refs.enterData, {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
   minuteIncrement: 1,
+  // метод закрытия календаря
   onClose(selectedDates) {
-    let curentDate = new Date();
-    r = selectedDates[0];
-    timeApp = r - curentDate;
-    if (timeApp >= 0) {
+    selectedTime = selectedDates[0];
+    // сравним выбранную дату с текущей и разблокируем кнопку старта
+    if (selectedTime - new Date() > 0) {
       refs.start.disabled = '';
-      refs.start.addEventListener('click', onStartClick);
     } else {
       alert('Please choose a date in the future');
     }
@@ -36,24 +45,50 @@ const flatpic = flatpickr(refs.enterData, {
 refs.start.addEventListener('click', onStartClick);
 
 function onStartClick(e) {
-  idTimer = setInterval(() => {
-    let curentDateNew = new Date();
-    let timeApp1 = r - curentDateNew;
-    let minus = convertMs(timeApp1);
-    refs.days.textContent = minus.days;
-    refs.hours.textContent = addZero(minus.hours);
-    refs.minuts.textContent = addZero(minus.minutes);
-    refs.seconds.textContent = addZero(minus.seconds);
+  refs.stop.disabled = '';
+
+  // наверняка прошло время между разблокировкой кнопки и кликом.
+  // возможно прошло слишком много времени перепроверим даты
+  if (selectedTime - new Date() > 0) {
+    idTimer = setInterval(() => {
+      let curentDateNew = new Date();
+      timeApp = selectedTime - curentDateNew;
+      let minus = convertMs(timeApp);
+      refs.days.textContent = minus.days;
+      refs.hours.textContent = addZero(minus.hours);
+      refs.minuts.textContent = addZero(minus.minutes);
+      refs.seconds.textContent = addZero(minus.seconds);
+      refs.start.disabled = 'disabled';
+      if (
+        refs.days.textContent === '0' &&
+        refs.hours.textContent === '00' &&
+        refs.minuts.textContent === '00' &&
+        refs.seconds.textContent === '00'
+      ) {
+        clearInterval(idTimer);
+        refs.stop.disabled = 'disabled';
+      }
+    }, 1000);
+  } else {
+    // если мы не успели запустить таймер и момент упущен объявим это
     refs.start.disabled = 'disabled';
-    if (
-      refs.days.textContent === '0' &&
-      refs.hours.textContent === '00' &&
-      refs.minuts.textContent === '00' &&
-      refs.seconds.textContent === '00'
-    ) {
-      clearInterval(idTimer);
-    }
-  }, 1000);
+    alert('Please choose a date in the future');
+  }
+}
+function onStopClick() {
+  // снова проверим а тикают ли часики?
+  if (selectedTime - new Date() > 0) {
+    clearInterval(idTimer);
+    refs.days.textContent = '0';
+    refs.hours.textContent = '00';
+    refs.minuts.textContent = '00';
+    refs.seconds.textContent = '00';
+    refs.stop.disabled = 'disabled';
+  } else {
+    refs.start.disabled = 'disabled';
+    refs.stop.disabled = 'disabled';
+    alert('Please choose a date in the future');
+  }
 }
 
 // конвертируем милисекунды в нормальное время
